@@ -4,16 +4,16 @@
   "private": true,
   "engines": {
     "node": "18.17.1",
-    "npm": ">=9.6.7"
+    "npm": "9.6.7"
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "npm install && next build",
     "start": "next start -p 3001",
     "lint": "next lint",
     "clean": "rm -rf .next",
     "dev:clean": "npm run clean && npm run dev",
-    "build:clean": "rm -rf .next && npm run build",
+    "build:clean": "rm -rf .next node_modules/.cache && npm run build",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
