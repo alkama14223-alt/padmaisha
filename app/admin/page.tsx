@@ -97,9 +97,6 @@ export default function AdminDashboard() {
         const ordersSnap = await getDocs(collection(db, "orders"));
         const ordersData = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setOrders(ordersData);
-
-        // Get orders stats
-        const ordersSnap = await getDocs(collection(db, "orders"));
         const orders = ordersSnap.docs.map(doc => doc.data());
         const totalOrders = orders.length;
         const revenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);

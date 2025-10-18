@@ -7,9 +7,10 @@ import OrderLoadingScreen from '@/components/OrderLoadingScreen';
 
 const CheckoutPage: React.FC = () => {
   const { state, user, dispatch } = useApp();
-  const router = useRouter();
-
-  const cartItems = state.cart || [];
+  const router = useR      // Prepare email data for customer
+      customerEmailData.message = customerEmailContent;
+      
+      // Continue with the const cartItems = state.cart || [];
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const platformFee = 20;
   const deliveryCharges = cartTotal > 2000 ? 0 : 50;
