@@ -24,10 +24,14 @@ const BrandProductsClient = () => {
     discount: [] as string[]
   });
 
-  const brandId = params.brandId as string;
-  const brand = state.brands.find(b => b.id === brandId);
+  const brandId = params?.brandId ? String(params.brandId) : '';
+  const brand = state.brands.find(b => 
+    b.id === brandId || 
+    b.name.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '').replace(/\./g, '') === brandId
+  );
   const brandProducts = state.products.filter(p => 
-    p.brand.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '').replace(/\./g, '') === brandId
+    p.brand === brand?.name ||
+    (p.brand || '').toLowerCase().replace(/\s+/g, '-').replace(/&/g, '').replace(/\./g, '') === brandId
   );
 
   // Filter and sort products
@@ -36,13 +40,13 @@ const BrandProductsClient = () => {
 
     // Apply filters
     if (filters.categories.length > 0) {
-      filtered = filtered.filter(p => filters.categories.includes(p.category));
+      filtered = filtered.filter(p => filters.categories.includes(p.category || ''));
     }
     if (filters.colors.length > 0) {
-      filtered = filtered.filter(p => filters.colors.includes(p.color));
+      filtered = filtered.filter(p => filters.colors.includes(p.color || ''));
     }
     if (filters.sizes.length > 0) {
-      filtered = filtered.filter(p => p.sizes.some(size => filters.sizes.includes(size)));
+      filtered = filtered.filter(p => (p.sizes || []).some(size => filters.sizes.includes(size)));
     }
     filtered = filtered.filter(p => 
       p.price >= filters.priceRange.min && p.price <= filters.priceRange.max
@@ -67,8 +71,8 @@ const BrandProductsClient = () => {
     return filtered;
   }, [brandProducts, filters, sortBy]);
 
-  const categories = Array.from(new Set(brandProducts.map(p => p.category)));
-  const colors = Array.from(new Set(brandProducts.map(p => p.color)));
+  const categories = Array.from(new Set(brandProducts.map(p => p.category || '')));
+  const colors = Array.from(new Set(brandProducts.map(p => p.color || '')));
   const sizes = Array.from(new Set(brandProducts.flatMap(p => p.sizes)));
 
   const handleFilterChange = (type: string, value: string, checked: boolean) => {
@@ -193,9 +197,9 @@ const BrandProductsClient = () => {
                   <div key={size} className="flex items-center space-x-2">
                     <Checkbox
                       id={size}
-                      checked={filters.sizes.includes(size)}
+                      checked={filters.sizes.includes(size || '')}
                       onCheckedChange={(checked) => 
-                        handleFilterChange('sizes', size, checked as boolean)
+                        handleFilterChange('sizes', size || '', checked as boolean)
                       }
                     />
                     <label htmlFor={size} className="text-sm cursor-pointer">

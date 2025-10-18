@@ -1,21 +1,27 @@
 "use client";
+// ...existing code...
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
+import { Modal } from '../../../components/ui/modal';
 import { ShoppingCart, Heart, Share2, Truck, Shield, RotateCcw } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import ProductCard from '@/components/ProductCard';
+import FeaturedProducts from '@/components/FeaturedProducts';
 
 const ProductDetailClient = () => {
   const params = useParams();
   const router = useRouter();
+  const [showShareModal, setShowShareModal] = useState(false);
   const { state, dispatch } = useApp();
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [showDefaultSizePrompt, setShowDefaultSizePrompt] = useState(false);
   const [productsReady, setProductsReady] = useState(false);
 
   useEffect(() => {
@@ -24,7 +30,7 @@ const ProductDetailClient = () => {
     }
   }, [state.products]);
 
-  const productId = params.productId as string;
+  const productId = params?.productId as string;
   const product = state.products.find(p => p.id === productId);
 
   if (!productsReady) {
@@ -35,36 +41,103 @@ const ProductDetailClient = () => {
     );
   }
 
-  if (!product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
-          <Button onClick={() => router.back()}>Go Back</Button>
-        </div>
-      </div>
-    );
-  }
+  // Images array must be defined before fallbackProduct
+  const actualImages = [
+    '/product-images/WhatsApp Image 2025-09-16 at 15.32.58.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 15.34.39.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 15.35.34.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 15.36.15.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 15.37.01.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 15.38.55.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 18.37.02.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 18.47.23.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 18.52.53.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 18.58.50.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 19.03.07.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 19.07.53.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 19.15.54.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 19.20.48.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 19.24.52.jpeg',
+    '/product-images/WhatsApp Image 2025-09-16 at 19.29.04.jpeg',
+    '/product-images/WhatsApp Image 2025-09-25 at 18.31.21.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 10.48.12.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.00.28.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.05.27.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.12.54.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.15.54.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.18.29.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.24.05.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.26.23.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.36.51.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.40.45.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 11.44.20.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 12.10.45.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 12.20.16.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 12.25.52.jpeg',
+    '/product-images/WhatsApp Image 2025-09-26 at 12.27.49.jpeg',
+  ];
+  // Fallback demo product if not found
+  const fallbackProduct = {
+    id: 'demo-product',
+    name: 'Demo Fashion Product',
+    price: 1299,
+    originalPrice: 1899,
+    image: actualImages[Math.floor(Math.random() * actualImages.length)],
+    brand: 'Padmaisha',
+    category: 'Kurtis',
+    color: 'Red',
+    sizes: ['S', 'M', 'L', 'XL'],
+    description: 'A premium demo product for retailers. Stylish, comfortable, and made from high-quality materials. Perfect for showcasing your store.',
+    season: 'All Seasons',
+  };
+  // Always use the product from state if found, fallback only if not found
+  const showProduct = product ? { ...product } : fallbackProduct;
 
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  const discount = showProduct.originalPrice ? Math.round(((showProduct.originalPrice - showProduct.price) / showProduct.originalPrice) * 100) : 0;
   const relatedProducts = state.products
-    .filter(p => p.brand === product.brand && p.id !== product.id)
+    .filter(p => p.brand === showProduct.brand && p.id !== showProduct.id)
     .slice(0, 4);
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
-      toast.error('Please select a size');
+    // If product has sizes and none selected, show small prompt to add default size
+    if (showProduct.sizes && showProduct.sizes.length > 0 && !selectedSize) {
+      setShowDefaultSizePrompt(true);
       return;
     }
 
-    for (let i = 0; i < quantity; i++) {
-      dispatch({ 
-        type: 'ADD_TO_CART', 
-        payload: { product, size: selectedSize } 
-      });
+    const sizeToUse = selectedSize || (showProduct.sizes && showProduct.sizes.length > 0 ? showProduct.sizes[0] : 'M');
+    dispatch({
+      type: 'ADD_TO_CART',
+      payload: {
+        product: showProduct,
+        size: sizeToUse,
+        quantity: quantity,
+      },
+    });
+    // emit global event so Navbar can show mini-cart flyout
+    try { window?.dispatchEvent(new CustomEvent('padmaisha:cart-updated', { detail: { product: showProduct, size: sizeToUse, quantity } })); } catch (e) {}
+    toast.success(`${showProduct.name} (${quantity}) added to cart!`);
+    setTimeout(() => router.push('/cart'), 500);
+  };
+
+  const inWishlist = state?.wishlist?.some((item) => item.id === showProduct.id);
+  const handleToggleWishlist = () => {
+    if (inWishlist) {
+      dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: showProduct.id });
+      toast.success('Removed from wishlist!');
+    } else {
+      dispatch({ type: 'ADD_TO_WISHLIST', payload: showProduct });
+      toast.success('Added to wishlist!');
+      setTimeout(() => router.push('/profile/wishlist'), 500);
     }
-    
-    toast.success(`${product.name} (${quantity}) added to cart!`);
+  };
+
+  const handleShare = () => {
+    if (typeof window !== 'undefined') {
+      setShowShareModal(true);
+      navigator.clipboard.writeText(window.location.href);
+      toast.success('Product link copied to clipboard!');
+    }
   };
 
   return (
@@ -75,8 +148,8 @@ const ProductDetailClient = () => {
           <div className="space-y-4">
             <div className="relative overflow-hidden rounded-lg">
               <Image
-                src={product.image}
-                alt={product.name}
+                src={showProduct.image || '/product-images/default.jpg'}
+                alt={showProduct.name}
                 width={800}
                 height={600}
                 className="w-full h-96 lg:h-[600px] object-cover hover:scale-105 transition-transform duration-300 cursor-zoom-in"
@@ -98,16 +171,16 @@ const ProductDetailClient = () => {
           <div className="space-y-6">
             <div>
               <Badge variant="outline" className="mb-2">
-                {product.brand}
+                {showProduct.brand}
               </Badge>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{showProduct.name}</h1>
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-3xl font-bold text-red-500">₹{product.price.toLocaleString()}</span>
-                {product.originalPrice > product.price && (
+                <span className="text-3xl font-bold text-red-500">₹{showProduct.price.toLocaleString()}</span>
+                {showProduct.originalPrice && showProduct.originalPrice > showProduct.price && (
                   <>
-                    <span className="text-xl text-gray-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                    <span className="text-xl text-gray-500 line-through">₹{showProduct.originalPrice.toLocaleString()}</span>
                     <Badge className="bg-green-100 text-green-800">
-                      Save ₹{(product.originalPrice - product.price).toLocaleString()}
+                      Save ₹{(showProduct.originalPrice ? (showProduct.originalPrice - showProduct.price) : 0).toLocaleString()}
                     </Badge>
                   </>
                 )}
@@ -118,7 +191,7 @@ const ProductDetailClient = () => {
                     🎉 Extra 12% discount applied for registered retailers!
                   </p>
                   <p className="text-green-600 text-sm">
-                    Final price: ₹{Math.round(product.price * 0.88).toLocaleString()}
+                    Final price: ₹{Math.round(showProduct.price * 0.88).toLocaleString()}
                   </p>
                 </div>
               )}
@@ -133,7 +206,7 @@ const ProductDetailClient = () => {
                     <SelectValue placeholder="Select size" />
                   </SelectTrigger>
                   <SelectContent>
-                    {product.sizes.map(size => (
+                    {(showProduct.sizes || []).map(size => (
                       <SelectItem key={size} value={size}>{size}</SelectItem>
                     ))}
                   </SelectContent>
@@ -165,17 +238,55 @@ const ProductDetailClient = () => {
                 <ShoppingCart className="h-5 w-5 mr-2" />
                 Add to Cart
               </Button>
-              
               <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" size="lg">
+                <Button
+                  variant={inWishlist ? "default" : "outline"}
+                  size="lg"
+                  onClick={handleToggleWishlist}
+                  className={inWishlist ? "bg-red-500 text-white" : ""}
+                >
                   <Heart className="h-5 w-5 mr-2" />
-                  Wishlist
+                  {inWishlist ? "Wishlisted" : "Wishlist"}
                 </Button>
-                <Button variant="outline" size="lg">
+                <Button variant="outline" size="lg" onClick={handleShare}>
                   <Share2 className="h-5 w-5 mr-2" />
                   Share
                 </Button>
               </div>
+              {/* Default size prompt */}
+              {showDefaultSizePrompt && (
+                <div className="mt-3 bg-yellow-50 border border-yellow-200 p-3 rounded">
+                  <p className="text-yellow-800">You haven't selected a size. Add default size <strong>{showProduct?.sizes?.[0] || 'M'}</strong>?</p>
+                  <div className="mt-2 flex gap-2">
+                    <Button onClick={() => { setSelectedSize(showProduct?.sizes?.[0] || 'M'); setShowDefaultSizePrompt(false); handleAddToCart(); }}>Add default size</Button>
+                    <Button variant="outline" onClick={() => setShowDefaultSizePrompt(false)}>Choose size</Button>
+                  </div>
+                </div>
+              )}
+              {/* Share Modal */}
+              {showShareModal && (
+                <Modal open={showShareModal} onClose={() => setShowShareModal(false)}>
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Share Product</h2>
+                    <p className="mb-2">Share this link with others:</p>
+                    <Input value={window.location.href} readOnly className="mb-4" id="share-link-input" />
+                    <div className="flex gap-2 mb-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast.success('Link copied to clipboard!');
+                        }}
+                      >
+                        Copy Link
+                      </Button>
+                      <Button onClick={() => setShowShareModal(false)}>
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                </Modal>
+              )}
             </div>
 
             {/* Features */}
@@ -197,29 +308,20 @@ const ProductDetailClient = () => {
             {/* Description */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-3">Description</h3>
-              <p className="text-gray-600 leading-relaxed">{product.description}</p>
-              
-              <div className="mt-4 space-y-2">
-                <p className="text-sm"><span className="font-medium">Category:</span> {product.category}</p>
-                <p className="text-sm"><span className="font-medium">Color:</span> {product.color}</p>
-                <p className="text-sm"><span className="font-medium">Season:</span> {product.season}</p>
-                <p className="text-sm"><span className="font-medium">Available Sizes:</span> {product.sizes.join(', ')}</p>
-              </div>
+                <p className="text-gray-600 leading-relaxed">{showProduct.description}</p>
+                
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm"><span className="font-medium">Category:</span> {showProduct.category}</p>
+                  <p className="text-sm"><span className="font-medium">Color:</span> {showProduct.color}</p>
+                  <p className="text-sm"><span className="font-medium">Season:</span> {showProduct.season}</p>
+                   <p className="text-sm"><span className="font-medium">Available Sizes:</span> {(showProduct.sizes || []).join(', ')}</p>
+                </div>
             </div>
           </div>
         </div>
 
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">More from {product.brand}</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map(relatedProduct => (
-                <ProductCard key={relatedProduct.id} product={relatedProduct} />
-              ))}
-            </div>
-          </div>
-        )}
+  {/* Featured Collection - all products */}
+  <FeaturedProducts />
       </div>
     </div>
   );

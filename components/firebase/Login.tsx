@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { auth } from './firebaseConfig';
+import { useAuth } from '../../contexts/AuthContext';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { Eye, EyeOff, Mail, Lock, User, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
@@ -17,15 +18,15 @@ const Login = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [showForgot, setShowForgot] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const { loginUser } = useAuth();
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-  // Only allow login if running in browser (not SSR)
-  if (typeof window === 'undefined') throw new Error('Login only allowed in browser');
-  await signInWithEmailAndPassword(auth, email, password);
+      await loginUser(email, password);
       setSuccess('Login successful!');
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -39,10 +40,8 @@ const Login = ({ onSuccess }: { onSuccess?: () => void }) => {
     setError('');
     setSuccess('');
     try {
-  // Only allow Google login if running in browser (not SSR)
-  if (typeof window === 'undefined') throw new Error('Google login only allowed in browser');
-  const provider = new GoogleAuthProvider();
-  await signInWithPopup(auth, provider);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       setSuccess('Login successful!');
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -56,9 +55,7 @@ const Login = ({ onSuccess }: { onSuccess?: () => void }) => {
     setError('');
     setSuccess('');
     try {
-  // Only allow password reset if running in browser (not SSR)
-  if (typeof window === 'undefined') throw new Error('Password reset only allowed in browser');
-  await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email);
       setSuccess('A password reset email has been sent. Please check your inbox or spam folder.');
     } catch (err: any) {
       setError(err.message);

@@ -41,12 +41,12 @@ const NotificationBar = () => {
   }, [notifications.length]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-black text-white py-2 px-4 z-40">
-      <div className="max-w-7xl mx-auto">
-        <div className={`text-center text-sm transition-all duration-300 ${
-          isVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-4'
-        }`}>
-          🔔 {notifications[currentIndex]}
+    <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 text-white py-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-center items-center gap-4 overflow-x-auto whitespace-nowrap">
+          <span className="px-2">★ 12% OFF on New Arrivals</span>
+          <span className="w-px h-4 bg-white/30"></span>
+          <span className="px-2">Free Shipping on Orders Above ₹2000</span>
         </div>
       </div>
     </div>

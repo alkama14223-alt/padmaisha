@@ -10,12 +10,13 @@ import { toast } from 'sonner';
 const RegistrationModal = () => {
   const { state, dispatch } = useApp();
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    gst: '',
-    address: ''
+  name: '',
+  phone: '',
+  gst: '',
+  address: ''
   });
   const [loading, setLoading] = useState(false);
+  // Removed password field for survey form
 
   if (!state.showRegistrationModal) return null;
 
@@ -37,8 +38,40 @@ const RegistrationModal = () => {
       return;
     }
 
+    // Save user to Firestore 'orders' collection for dashboard visibility
+    try {
+      const { db } = await import("@/lib/firebase");
+      const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
+      await addDoc(collection(db, "orders"), {
+        user: {
+          name: formData.name,
+          phone: formData.phone,
+          gst: formData.gst,
+          address: formData.address,
+          isRegistered: true,
+          discount: 12,
+        },
+        status: {
+          contacted: false,
+          fulfilled: false,
+          order_placed: false,
+          notes: "",
+        },
+        order_details: {
+          items: [],
+          total_amount: 0,
+          date: serverTimestamp(),
+        },
+        created_at: serverTimestamp(),
+      });
+    } catch (err) {
+      toast.error("Failed to save registration. Please try again.");
+      setLoading(false);
+      return;
+    }
+
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = {
       id: Date.now().toString(),
@@ -52,7 +85,6 @@ const RegistrationModal = () => {
 
     dispatch({ type: 'SET_USER', payload: user });
     dispatch({ type: 'TOGGLE_REGISTRATION_MODAL', payload: false });
-    
     toast.success('Registration successful! You got 12% discount on all orders!');
     setLoading(false);
   };
@@ -120,6 +152,8 @@ const RegistrationModal = () => {
               className="w-full min-h-[80px]"
             />
           </div>
+
+          {/* Password field removed for survey form */}
 
           <div className="flex gap-3 pt-4">
             <Button

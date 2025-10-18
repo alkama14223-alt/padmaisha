@@ -1,6 +1,86 @@
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 1s cubic-bezier(0.4,0,0.2,1) both;
+}
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(48px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 1s cubic-bezier(0.4,0,0.2,1) both;
+}
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  min-width: 200%;
+  animation: marquee 18s linear infinite;
+  animation-play-state: running;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-24px); }
+  100% { transform: translateY(0); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: inline-block;
+  min-width: 200%;
+  animation: marquee 18s linear infinite;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 251;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -251;
+  }
+}
+
+.animate-dash {
+  animation: dash 2s ease-in-out infinite;
+}
+
+/* Performance Optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.hardware-accelerate {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce Motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-dash {
+    animation: none;
+  }
+}
 
 @layer base {
   :root {
@@ -190,6 +270,16 @@
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+@keyframes floatImage {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float-image {
+  animation: floatImage 3s ease-in-out infinite;
 }
 
 /* Enhanced button styles */

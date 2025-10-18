@@ -1,52 +1,102 @@
 'use client';
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ShoppingCart, Heart } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  image: string;
-  brand: string;
-  category: string;
-  color: string;
-  sizes: string[];
-  description: string;
-  season: string;
-}
+import { Product } from '@/models/product';
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { dispatch } = useApp();
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  const { state, dispatch } = useApp();
+  const router = useRouter();
+  const { isAdmin } = useAuth();
+  const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+  const inWishlist = state?.wishlist?.some((item: any) => item.id === product.id);
+
+  // Always use the product.image if available, fallback to a default image
+  const productImage = product.image || '/product-images/default.jpg';
 
   const handleAddToCart = () => {
+    if (!product.sizes || product.sizes.length === 0) {
+      toast.error('No size available for this product');
+      return;
+    }
     dispatch({ 
       type: 'ADD_TO_CART', 
-      payload: { product, size: product.sizes[0] || 'M' } 
+      payload: { product: { ...product, originalPrice: product.originalPrice || product.price }, size: product.sizes[0] || 'M', quantity: 1 } 
     });
-    toast.success(`${product.name} added to cart!`);
+  try { window?.dispatchEvent(new CustomEvent('padmaisha:cart-updated', { detail: { product, size: product.sizes?.[0] || 'M', quantity: 1 } })); } catch (e) {}
+    toast.success(`${product.name} added to cart!`, {
+      icon: <ShoppingCart className="h-6 w-6 text-pink-500" />,
+      style: {
+        borderRadius: '1rem',
+        background: '#fff',
+        color: '#333',
+        fontWeight: 'bold',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.08)'
+      },
+    });
+  };
+
+  const handleToggleWishlist = () => {
+    if (inWishlist) {
+      dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
+      toast.success('Removed from wishlist!');
+    } else {
+  dispatch({ type: 'ADD_TO_WISHLIST', payload: { ...product, originalPrice: product.originalPrice || product.price } });
+      toast.success('Added to wishlist!');
+    }
+  };
+
+  // Admin actions: set position & delete product
+  const [editingPosition, setEditingPosition] = React.useState<number | null>(null);
+  const savePosition = async () => {
+    if (editingPosition === null) return;
+    try {
+      const docRef = doc(db, 'products', product.id);
+      await updateDoc(docRef, { position: Number(editingPosition) });
+      toast.success('Position updated');
+      // reload to reflect ordering (simple approach)
+      window.location.reload();
+    } catch (e) {
+      toast.error('Failed to update position');
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    const ok = confirm(`Delete product "${product.name}"? This cannot be undone.`);
+    if (!ok) return;
+    try {
+      await deleteDoc(doc(db, 'products', product.id));
+      toast.success('Product deleted');
+      window.location.reload();
+    } catch (e) {
+      toast.error('Failed to delete product');
+    }
   };
 
   return (
-    <div className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-      <Link href={`/products/${product.id}`}>
-        <div className="relative overflow-hidden">
+  <div className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 w-full max-w-[320px] flex flex-col min-h-[360px]">
+  <Link href={`/products/${encodeURIComponent(product.id)}`}>
+  <div className="relative overflow-hidden w-full h-0 pb-[100%]"> {/* 1:1 square */}
           <img
-            src={product.image}
+            src={productImage}
             alt={product.name}
-            className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+            className="absolute inset-0 w-full h-full object-contain bg-white group-hover:scale-105 transition-transform duration-300 p-4"
+            loading="lazy"
             onError={(e) => {
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=500&fit=crop';
+              e.currentTarget.src = '/product-images/default.jpg';
             }}
           />
           {discount > 0 && (
@@ -54,13 +104,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               {discount}% OFF
             </Badge>
           )}
-          <button className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-            <Heart className="h-4 w-4 text-gray-600" />
+          <button
+            className={`absolute top-2 right-2 p-2 rounded-full bg-white shadow-md transition-opacity ${inWishlist ? 'text-red-500' : 'text-gray-600'} opacity-100`}
+            aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            onClick={e => {
+              e.preventDefault();
+              handleToggleWishlist();
+            }}
+          >
+            <Heart className={`h-4 w-4 ${inWishlist ? 'text-red-500' : 'text-gray-600'}`} />
           </button>
         </div>
       </Link>
 
-      <div className="p-4">
+  <div className="p-4 flex flex-col flex-1 justify-between">
         <div className="mb-2">
           <Badge variant="outline" className="text-xs">
             {product.brand}
@@ -68,38 +125,62 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
         
         <Link href={`/products/${product.id}`}>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-red-500 transition-colors line-clamp-2">
+          <h3 className="text-lg font-bold text-gray-900 mb-2 hover:text-red-500 transition-colors line-clamp-2">
             {product.name}
           </h3>
         </Link>
 
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xl font-bold text-red-500">₹{product.price.toLocaleString()}</span>
-          {product.originalPrice > product.price && (
-            <span className="text-sm text-gray-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+          <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl font-bold text-red-500">Rs. {product.price.toLocaleString()}</span>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <span className="text-sm text-gray-500 line-through">Rs. {product.originalPrice.toLocaleString()}</span>
           )}
         </div>
 
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className="text-sm text-gray-600">Sizes:</span>
-          {product.sizes.slice(0, 3).map((size) => (
+          {(product.sizes || []).slice(0, 3).map((size) => (
             <Badge key={size} variant="outline" className="text-xs">
               {size}
             </Badge>
           ))}
-          {product.sizes.length > 3 && (
-            <span className="text-xs text-gray-500">+{product.sizes.length - 3} more</span>
+          {(product.sizes || []).length > 3 && (
+            <span className="text-xs text-gray-500 whitespace-nowrap">+{(product.sizes || []).length - 3} more</span>
           )}
         </div>
 
-        <Button
-          onClick={handleAddToCart}
-          className="w-full btn-primary ripple"
-          size="sm"
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Add to Cart
-        </Button>
+                      {product.sizes && product.sizes.length > 0 ? (
+                        <Button
+                          onClick={() => handleAddToCart()}
+                          className="w-full btn-primary ripple"
+                          size="sm"
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Add to Cart
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={(e) => { e.preventDefault(); dispatch({ type: 'ADD_TO_CART', payload: { product: product, size: 'M', quantity: 1 } }); toast.success(`${product.name} added to cart!`); }}
+                          className="w-full btn-primary ripple"
+                          size="sm"
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Add to Cart
+                        </Button>
+                      )}
+                        {isAdmin && (
+                          <div className="mt-3 flex gap-2">
+                            <input
+                              type="number"
+                              value={editingPosition ?? product.position ?? ''}
+                              onChange={e => setEditingPosition(Number(e.target.value))}
+                              placeholder="pos"
+                              className="w-20 px-2 py-1 border rounded"
+                            />
+                            <button onClick={savePosition} className="px-3 py-1 bg-indigo-600 text-white rounded">Save</button>
+                            <button onClick={handleDeleteProduct} className="px-3 py-1 bg-red-500 text-white rounded">Delete</button>
+                          </div>
+                        )}
       </div>
     </div>
   );
