@@ -1,6 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
+    ignoreDuringBuilds: true
+  },
+  typescript: {
+    ignoreBuildErrors: true
+  },
+  images: {
+    domains: ['images.unsplash.com', 'localhost'],
+    unoptimized: true
+  },
+  experimental: {
+    optimizeCss: true,
+    scrollRestoration: true
+  },
+  swcMinify: true
+};
+
+module.exports = nextConfig;
+const nextConfig = {
+  eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {

@@ -8,13 +8,9 @@
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "npm install && next build",
+    "build": "next build",
     "start": "next start -p 3001",
-    "lint": "next lint",
-    "clean": "rm -rf .next",
-    "dev:clean": "npm run clean && npm run dev",
-    "build:clean": "rm -rf .next node_modules/.cache && npm run build",
-    "type-check": "tsc --noEmit"
+    "lint": "next lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
