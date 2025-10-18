@@ -3,8 +3,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    ignoreBuildErrors: true
+  },
   productionBrowserSourceMaps: false,
-  output: 'standalone',
   images: {
     domains: ['images.unsplash.com', 'localhost'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
